@@ -3,697 +3,1352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chuyển Ảnh sang Base64 & Chú Thích</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>SOP Creator & Image Editor</title>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <style>
-        /* Tùy chỉnh thanh trượt */
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #3b82f6;
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-dark: #1e293b;
+            --bg-panel: #f8fafc;
+            --border: #e2e8f0;
+            --text: #334155;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            background-color: #cbd5e1;
+            overflow: hidden;
+            color: var(--text);
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 320px;
+            background: white;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .panel-section {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- Top Icon Toolbar --- */
+        .icon-toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            background: #f1f5f9;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            color: var(--text);
             cursor: pointer;
-            margin-top: -8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s;
+            position: relative;
         }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
+
+        .icon-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .icon-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #e2e8f0;
+            color: #94a3b8;
+        }
+        
+        .divider-v {
+            width: 1px;
+            background: #cbd5e1;
+            margin: 0 2px;
+        }
+
+        /* Tools Grid */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .tool-btn {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
             cursor: pointer;
-            background: #e5e7eb;
-            border-radius: 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.2s;
+            color: var(--text);
+            font-size: 0.75rem;
         }
-        .preview-pattern {
-            background-color: #ffffff;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 10px 10px;
-        }
-        canvas {
-            touch-action: none; /* Ngăn cuộn trang khi vẽ trên mobile */
-        }
+
+        .tool-btn i { font-size: 1rem; }
+        
+        .tool-btn:hover { background: #e2e8f0; }
+        
         .tool-btn.active {
-            background-color: #dbeafe; /* bg-blue-100 */
-            color: #1d4ed8; /* text-blue-700 */
-            ring-width: 2px;
-            ring-color: #3b82f6; /* ring-blue-500 */
-            border-color: transparent;
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Inputs & Controls */
+        .control-group {
+            margin-bottom: 8px;
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        label { font-size: 0.8rem; font-weight: 500; }
+
+        input[type="color"] {
+            width: 30px; height: 28px;
+            border: none; cursor: pointer;
+            background: none;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 5px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 100%;
+            font-size: 0.85rem;
+        }
+
+        select {
+            padding: 5px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 100%;
+            font-size: 0.85rem;
+            background: white;
+        }
+
+        textarea {
+            padding: 6px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 100%;
+            font-size: 0.85rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        input[type="range"] { width: 100%; cursor: pointer; }
+
+        .btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            width: 100%;
+        }
+        
+        .btn-sm { font-size: 0.8rem; padding: 4px 8px; width: auto; }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        
+        .btn-danger { background: white; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-danger:hover { background: #fee2e2; }
+
+        .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text); }
+        .btn-secondary:hover { background: var(--bg-panel); }
+        
+        .btn-success { background: var(--success); color: white; border: none; }
+        .btn-success:hover { background: #059669; }
+
+        /* --- Workspace --- */
+        .workspace {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            position: relative;
+            padding: 40px;
+        }
+
+        .canvas-container-shadow {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: white;
+        }
+
+        /* --- Toast Notification --- */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out forwards;
+            min-width: 250px;
+        }
+        
+        .toast.success i { color: #4ade80; }
+        .toast.info i { color: #60a5fa; }
+        .toast.error i { color: #ef4444; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        /* --- Modal for Manual Copy --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 90%;
+            max-height: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 60vh;
+            border: 1px solid #ddd;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Utility classes */
+        .w-half { width: 48%; }
+        .hidden { display: none; }
+        .file-info { font-size: 0.75rem; color: #64748b; background: #f1f5f9; padding: 4px; border-radius: 4px; margin-top: 5px; }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
         }
     </style>
+    <!-- Fabric JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <!-- BWIP-JS for Barcode/QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/3.4.3/bwip-js-min.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen font-sans">
+<body>
 
-    <div class="max-w-6xl mx-auto p-4 md:p-8">
+    <!-- Sidebar -->
+    <div class="sidebar">
         
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-blue-600 mb-2">Ảnh sang Base64 & Chú thích</h1>
-            <p class="text-gray-500">Tải ảnh, nén, <span class="text-blue-600 font-semibold">đánh dấu/chú thích</span> và lấy mã nhúng.</p>
-        </header>
-
-        <!-- Main Layout -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Left Column: Settings & Upload -->
-            <div class="lg:col-span-1 space-y-6">
+        <!-- TOP SECTION: Toolbar + Config + Upload -->
+        <div class="panel-section">
+            <div class="icon-toolbar">
+                <button class="icon-btn" id="copyClipboard" title="Copy to Clipboard (PNG)"><i class="fa-regular fa-copy"></i></button>
+                <button class="icon-btn" id="copyMarkdown" title="Copy Markdown Base64 (PNG)"><i class="fa-brands fa-markdown"></i></button>
+                <button class="icon-btn" id="downloadBtn" title="Tải ảnh xuống (.png)"><i class="fa-solid fa-download"></i></button>
                 
-                <!-- Upload Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="flex flex-col items-center justify-center w-full">
-                        <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-xl cursor-pointer bg-blue-50 hover:bg-blue-100 transition-all duration-300 group">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <svg class="w-8 h-8 mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                <p class="text-sm text-gray-600"><span class="font-bold">Tải ảnh lên</span> (Kéo thả hoặc Dán)</p>
-                            </div>
-                            <input id="dropzone-file" type="file" class="hidden" accept="image/*" />
-                        </label>
-                        <p class="text-xs text-gray-400 mt-2">Nhấn Ctrl+V/Cmd+V để dán ảnh từ clipboard.</p>
-                    </div>
+                <div class="divider-v"></div>
+                
+                <button class="icon-btn" id="undoBtn" title="Hoàn tác (Ctrl+Z)" disabled><i class="fa-solid fa-rotate-left"></i></button>
+                <button class="icon-btn" id="redoBtn" title="Làm lại (Ctrl+Y)" disabled><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            
+            <!-- Quality Config (Moved Up) -->
+            <div class="control-group" style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; margin-bottom: 8px;">
+                <div class="control-row">
+                    <label style="font-size: 0.75rem;">Định dạng xuất: PNG (Lossless)</label>
                 </div>
+                <!-- Hidden quality slider because PNG is lossless usually, keeping for logic but hiding UI or disabling -->
+                <input type="range" id="qualityRange" min="0.1" max="1.0" step="0.1" value="1.0" disabled style="opacity: 0.5;">
+                <div class="file-info" id="fileSizeInfo">Size: - | PNG</div>
+            </div>
 
-                <!-- Settings Card -->
-                <div id="settingsPanel" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-                    <h3 class="font-bold text-gray-700 border-b pb-2">Cấu hình</h3>
-                    
-                    <!-- Width -->
-                    <div>
-                        <label class="block mb-1 text-sm font-medium text-gray-700">Chiều rộng (px)</label>
-                        <div class="flex gap-2">
-                             <input type="number" id="maxWidthInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2" placeholder="Auto">
-                             <span class="inline-flex items-center px-2 text-xs text-gray-500 bg-gray-100 rounded border border-gray-200 whitespace-nowrap">
-                                 Gốc: <span id="originalWidthDisplay" class="ml-1 font-bold">0</span>
-                             </span>
-                        </div>
-                    </div>
+            <!-- Compact Upload & Canvas Info -->
+            <div class="control-row" style="margin-bottom: 10px;">
+                <button class="btn btn-primary btn-sm" onclick="document.getElementById('fileInput').click()" title="Tải ảnh lên">
+                    <i class="fa-solid fa-upload"></i> Upload
+                </button>
+                <input type="file" id="fileInput" accept="image/*" class="hidden">
+                <span style="font-size: 0.75rem; color: #64748b;">(hoặc Ctrl+V)</span>
+            </div>
 
-                    <!-- Quality -->
-                    <div>
-                        <label class="block mb-1 text-sm font-medium text-gray-700 flex justify-between">
-                            <span>Chất lượng</span>
-                            <span id="qualityValue" class="text-blue-600 font-bold">80%</span>
-                        </label>
-                        <input id="qualityInput" type="range" value="0.8" min="0.1" max="1" step="0.05" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
+            <div class="control-row">
+                <div class="w-half">
+                    <label>Rộng</label>
+                    <input type="number" id="canvasWidth" value="800">
+                </div>
+                <div class="w-half">
+                    <label>Cao</label>
+                    <input type="number" id="canvasHeight" value="600">
+                </div>
+            </div>
+            <div class="control-row">
+                <button class="btn btn-secondary w-half" id="resizeBtn" style="font-size: 0.75rem;">Resize</button>
+                <button class="btn btn-secondary w-half" id="fitCanvasBtn" style="font-size: 0.75rem;" title="Cắt canvas vừa khít nội dung">Fit Content</button>
+            </div>
+            <button class="btn btn-danger" id="clearBtn" style="font-size: 0.75rem;"><i class="fa-solid fa-trash"></i> Reset All</button>
+        </div>
 
-                    <!-- Format -->
-                    <div>
-                        <label class="block mb-1 text-sm font-medium text-gray-700">Định dạng</label>
-                        <select id="formatInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2">
-                            <option value="image/jpeg" selected>JPEG (Nhẹ nhất)</option>
-                            <option value="image/png">PNG (Trong suốt)</option>
-                            <option value="image/webp">WebP (Hiện đại)</option>
-                        </select>
-                    </div>
-
-                    <!-- Info Box -->
-                    <div class="bg-blue-50 rounded-lg p-3 text-xs space-y-1">
-                        <div class="flex justify-between"><span class="text-gray-600">Gốc:</span> <span id="originalSize" class="font-medium">0 KB</span></div>
-                        <div class="flex justify-between"><span class="text-gray-600">Base64:</span> <span id="compressedSize" class="font-bold text-blue-600">0 KB</span></div>
-                        <div class="flex justify-between pt-1 border-t border-blue-200"><span class="text-gray-600">Hiệu quả:</span> <span id="savings" class="font-bold">0%</span></div>
-                    </div>
+        <!-- Tools Section -->
+        <div class="panel-section">
+            <div class="panel-title"><i class="fa-solid fa-pen-ruler"></i> Công cụ vẽ</div>
+            <div class="tools-grid">
+                <div class="tool-btn active" data-tool="select" title="Chọn & Di chuyển (V)">
+                    <i class="fa-solid fa-arrow-pointer"></i> <span>Chọn</span>
+                </div>
+                <div class="tool-btn" data-tool="rect" title="Hình chữ nhật (R)">
+                    <i class="fa-regular fa-square"></i> <span>Khung</span>
+                </div>
+                <div class="tool-btn" data-tool="circle" title="Hình tròn (C)">
+                    <i class="fa-regular fa-circle"></i> <span>Tròn</span>
+                </div>
+                <div class="tool-btn" data-tool="arrow" title="Mũi tên (A)">
+                    <i class="fa-solid fa-arrow-right-long"></i> <span>Mũi tên</span>
+                </div>
+                <div class="tool-btn" data-tool="text" title="Văn bản (T)">
+                    <i class="fa-solid fa-font"></i> <span>Chữ</span>
+                </div>
+                <div class="tool-btn" data-tool="stamp" title="Đánh số thứ tự (S)">
+                    <i class="fa-solid fa-stamp"></i> <span>Stamp</span>
+                </div>
+                <!-- New Barcode/QR Tool -->
+                <div class="tool-btn" data-tool="qrcode" title="Mã vạch / QR Code">
+                    <i class="fa-solid fa-qrcode"></i> <span>QR/Code</span>
+                </div>
+            </div>
+            
+            <!-- Stamp Settings -->
+            <div id="stampSettings" class="control-group" style="margin-top: 10px; display:none; background: #fff7ed; padding: 10px; border-radius: 6px; border: 1px solid #ffedd5;">
+                <label style="color: #c2410c;">Số bắt đầu:</label>
+                <div class="control-row">
+                    <input type="number" id="stampCount" value="1" min="1">
+                    <button class="btn btn-secondary btn-sm" onclick="resetStamp()">Reset</button>
                 </div>
             </div>
 
-            <!-- Right Column: Editor & Preview -->
-            <div class="lg:col-span-2 flex flex-col h-full space-y-4">
-                
-                <!-- Toolbar -->
-                <div id="toolbar" class="hidden flex flex-wrap items-center gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
-                    <span class="text-xs font-bold text-gray-400 uppercase px-2 w-full md:w-auto">Công cụ:</span>
-                    
-                    <button onclick="setTool('none')" id="btn-move" class="tool-btn active p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Chế độ xem">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    </button>
-                    
-                    <div class="w-px h-6 bg-gray-300 mx-1"></div>
-
-                    <button onclick="rotateImage()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Xoay ảnh 90°">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20h-5v-5M4 20h5M20 4h-5"></path></svg>
-                    </button>
-
-                    <button onclick="setTool('pen')" id="btn-pen" class="tool-btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Bút vẽ tự do">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    </button>
-
-                    <button onclick="setTool('rect')" id="btn-rect" class="tool-btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Hình chữ nhật">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path></svg>
-                    </button>
-
-                    <!-- NEW: Line -->
-                    <button onclick="setTool('line')" id="btn-line" class="tool-btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Đường thẳng">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20L20 4"></path></svg>
-                    </button>
-
-                    <!-- NEW: Arrow -->
-                    <button onclick="setTool('arrow')" id="btn-arrow" class="tool-btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Mũi tên">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                    </button>
-
-                    <button onclick="setTool('circle')" id="btn-circle" class="tool-btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Hình tròn">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>
-                    </button>
-
-                    <div class="w-px h-6 bg-gray-300 mx-1"></div>
-
-                    <button onclick="setTool('number')" id="btn-number" class="tool-btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Đánh số thứ tự">
-                        <div class="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
-                    </button>
-
-                    <div class="w-px h-6 bg-gray-300 mx-1"></div>
-
-                    <button onclick="setTool('redact')" id="btn-redact" class="tool-btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1 text-sm border border-transparent" title="Che thông tin (Đen)">
-                        <svg class="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
-                    </button>
-
-                    <div class="flex-grow"></div>
-
-                    <button onclick="resetDrawing()" class="p-2 rounded-lg hover:bg-yellow-50 text-yellow-700 flex items-center gap-1 text-sm transition-colors" title="Xóa tất cả hình vẽ">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    </button>
+            <!-- QR/Barcode Settings (New) -->
+            <div id="qrSettings" class="control-group" style="margin-top: 10px; display:none; background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                <label style="color: #15803d; font-weight:bold;">Tạo Mã QR/Barcode:</label>
+                <div style="margin-bottom: 5px;">
+                    <select id="bcType">
+                        <option value="qrcode">QR Code</option>
+                        <option value="code128">Code 128 (Barcode)</option>
+                        <option value="ean13">EAN-13</option>
+                    </select>
                 </div>
+                <div style="margin-bottom: 5px;">
+                    <input type="text" id="bcText" placeholder="Nhập nội dung mã..." value="SOP-123">
+                </div>
+                <button class="btn btn-success btn-sm" id="generateBcBtn" style="width: 100%;">
+                    <i class="fa-solid fa-plus"></i> Chèn vào Canvas
+                </button>
+            </div>
+        </div>
 
-                <!-- Canvas Editor Area -->
-                <div id="editorArea" class="hidden flex-grow bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative preview-pattern flex items-center justify-center min-h-[300px]">
-                    <div class="relative max-w-full max-h-full overflow-auto" style="max-height: 80vh;">
-                         <canvas id="mainCanvas" class="cursor-crosshair shadow-lg"></canvas>
-                    </div>
-                    
-                    <div id="loading" class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center hidden">
-                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
-                        <p class="text-sm text-gray-500">Đang xử lý...</p>
-                    </div>
+        <!-- Properties Section -->
+        <div class="panel-section">
+            <div class="panel-title"><i class="fa-solid fa-sliders"></i> Thuộc tính</div>
+            
+            <!-- Nút Xóa Đối Tượng -->
+            <div class="control-group">
+                <button class="btn btn-danger" id="deleteObjBtn" title="Xóa đối tượng đang chọn (Delete)">
+                    <i class="fa-solid fa-eraser"></i> Xóa đối tượng đang chọn
+                </button>
+            </div>
 
-                    <div id="placeholderText" class="absolute text-gray-400 text-center">
-                        <p>Chưa có ảnh</p>
+             <!-- TEXT EDITOR -->
+             <div class="control-group hidden" id="textEditorPanel" style="background: #e0f2fe; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                <label style="color: #0369a1; display: block; margin-bottom: 5px;">
+                    <i class="fa-solid fa-keyboard"></i> Sửa văn bản:
+                </label>
+                <textarea id="textEditorInput" rows="3"></textarea>
+            </div>
+
+            <!-- OBJECT SIZE EDITOR -->
+            <div class="control-group hidden" id="objectSizeSettings" style="background: #eff6ff; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                <label style="color: #1e40af; display: block; margin-bottom: 5px;">Kích thước:</label>
+                <div class="control-row">
+                    <div class="w-half">
+                        <label style="font-size: 0.7rem;">Rộng</label>
+                        <input type="number" id="objWidth">
+                    </div>
+                    <div class="w-half">
+                        <label style="font-size: 0.7rem;">Cao</label>
+                        <input type="number" id="objHeight">
                     </div>
                 </div>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="lockRatio" checked> Khóa tỷ lệ
+                </label>
+            </div>
 
-                <!-- Action Buttons -->
-                <div id="actionButtons" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- NEW: Copy Image to Clipboard -->
-                    <button onclick="copyImageToClipboard()" class="flex items-center justify-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all shadow-lg hover:shadow-xl text-sm font-bold">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v4m0 0v4m0-4h4m-4 0h4m9 4v-4m0 0v4m0-4h4m-4 0h4M16 18H8m8 0a2 2 0 002-2v-4m-2 4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2z"></path></svg>
-                        Copy Ảnh
-                    </button>
-                    <!-- Existing: Copy IMG Tag -->
-                    <button onclick="copyImgTag()" class="flex items-center justify-center px-4 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-xl transition-all shadow-lg hover:shadow-xl text-sm font-bold">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                        Copy &lt;img&gt;
-                    </button>
-                    <!-- Existing: Copy Base64 -->
-                    <button onclick="copyBase64()" class="flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-lg hover:shadow-xl text-sm font-bold">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                        Copy Base64
-                    </button>
+            <div class="control-group">
+                <label>Màu viền (Stroke)</label>
+                <div class="control-row">
+                    <input type="color" id="strokeColor" value="#ef4444">
+                    <input type="range" id="strokeWidth" min="1" max="20" value="3" style="width: 60%">
+                    <span id="strokeWidthVal" style="font-size: 0.8rem; width: 20px;">3</span>
                 </div>
+            </div>
 
-                <div id="copySuccess" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    Đã sao chép vào bộ nhớ tạm!
+            <div class="control-group">
+                <label>Màu nền (Fill)</label>
+                <div class="control-row">
+                    <input type="color" id="fillColor" value="#ef4444" disabled>
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="transparentFill" checked> Trong suốt
+                    </label>
                 </div>
+            </div>
+        </div>
 
+        <!-- Layers & Transform -->
+        <div class="panel-section">
+            <div class="panel-title"><i class="fa-solid fa-layer-group"></i> Lớp & Biến đổi</div>
+            <div class="control-row">
+                <button class="btn btn-secondary w-half" id="bringFront" title="Lên trên cùng"><i class="fa-solid fa-arrow-up"></i> Lên</button>
+                <button class="btn btn-secondary w-half" id="sendBack" title="Xuống dưới cùng"><i class="fa-solid fa-arrow-down"></i> Xuống</button>
+            </div>
+            <div class="control-row">
+                <button class="btn btn-secondary w-half" id="rotateLeft"><i class="fa-solid fa-rotate-left"></i> -90°</button>
+                <button class="btn btn-secondary w-half" id="rotateRight"><i class="fa-solid fa-rotate-right"></i> +90°</button>
             </div>
         </div>
     </div>
 
+    <!-- Workspace -->
+    <div class="workspace" id="workspace">
+        <div class="canvas-container-shadow">
+            <canvas id="c"></canvas>
+        </div>
+    </div>
+
+    <!-- Manual Copy Modal -->
+    <div id="manualCopyModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="color: var(--text);">Sao chép thủ công</h3>
+            <p style="font-size: 0.9rem; color: #64748b;">Trình duyệt chặn Copy tự động. Bạn hãy:<br><b>Click chuột phải vào ảnh dưới ➡ Chọn "Sao chép hình ảnh" (Copy Image)</b></p>
+            <img id="manualCopyImg" src="" alt="SOP Result">
+            <button class="btn btn-secondary" onclick="document.getElementById('manualCopyModal').classList.remove('active')">Đóng</button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
     <script>
+        // --- 1. INITIALIZATION ---
+        const initWidth = 800;
+        const initHeight = 600;
+        
+        const canvas = new fabric.Canvas('c', {
+            width: initWidth,
+            height: initHeight,
+            backgroundColor: '#ffffff', // Explicitly set white bg
+            preserveObjectStacking: true 
+        });
+
+        // Global State
+        let currentMode = 'select';
+        let isDrawing = false;
+        let origX, origY;
+        let activeObj;
+        let stampCount = 1;
+
+        // UNDO/REDO State
+        const history = [];
+        const historyRedo = [];
+        let isHistoryLocked = false;
+        const MAX_HISTORY = 20;
+
         // DOM Elements
-        const fileInput = document.getElementById('dropzone-file');
-        const settingsPanel = document.getElementById('settingsPanel');
-        const toolbar = document.getElementById('toolbar');
-        const editorArea = document.getElementById('editorArea');
-        const actionButtons = document.getElementById('actionButtons');
-        const placeholderText = document.getElementById('placeholderText');
-        const loadingIndicator = document.getElementById('loading');
-        const copySuccess = document.getElementById('copySuccess');
-        
-        // Canvas & Context
-        const canvas = document.getElementById('mainCanvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        
-        // Inputs
-        const inputs = {
-            width: document.getElementById('maxWidthInput'),
-            quality: document.getElementById('qualityInput'),
-            format: document.getElementById('formatInput'),
-            qualityDisplay: document.getElementById('qualityValue'),
-            origWidth: document.getElementById('originalWidthDisplay'),
-            origSize: document.getElementById('originalSize'),
-            compSize: document.getElementById('compressedSize'),
-            savings: document.getElementById('savings')
+        const els = {
+            width: document.getElementById('canvasWidth'),
+            height: document.getElementById('canvasHeight'),
+            strokeColor: document.getElementById('strokeColor'),
+            strokeWidth: document.getElementById('strokeWidth'),
+            strokeWidthVal: document.getElementById('strokeWidthVal'),
+            fillColor: document.getElementById('fillColor'),
+            transparentFill: document.getElementById('transparentFill'),
+            stampCount: document.getElementById('stampCount'),
+            quality: document.getElementById('qualityRange'),
+            qualityVal: document.getElementById('qualityVal'),
+            fileInfo: document.getElementById('fileSizeInfo'),
+            stampSettings: document.getElementById('stampSettings'),
+            objSizePanel: document.getElementById('objectSizeSettings'),
+            objWidth: document.getElementById('objWidth'),
+            objHeight: document.getElementById('objHeight'),
+            lockRatio: document.getElementById('lockRatio'),
+            undoBtn: document.getElementById('undoBtn'),
+            redoBtn: document.getElementById('redoBtn'),
+            deleteObjBtn: document.getElementById('deleteObjBtn'),
+            fitCanvasBtn: document.getElementById('fitCanvasBtn'),
+            // Text Editor Elements
+            textEditorPanel: document.getElementById('textEditorPanel'),
+            textEditorInput: document.getElementById('textEditorInput'),
+            // Modal Elements
+            modal: document.getElementById('manualCopyModal'),
+            modalImg: document.getElementById('manualCopyImg'),
+            // QR Settings
+            qrSettings: document.getElementById('qrSettings'),
+            bcType: document.getElementById('bcType'),
+            bcText: document.getElementById('bcText'),
+            generateBcBtn: document.getElementById('generateBcBtn')
         };
 
-        // State
-        let state = {
-            originalFile: null,
-            originalImageObj: null,
-            base64: "",
-            tool: 'none', // 'none', 'pen', 'rect', 'circle', 'line', 'arrow', 'number', 'redact'
-            isDrawing: false,
-            startX: 0,
-            startY: 0,
-            markerCount: 1,
-            snapshot: null, // For restoring canvas during shape preview
-            currentRotation: 0, // 0, 90, 180, 270 degrees
-        };
+        // --- 2. UNDO / REDO SYSTEM ---
 
-        // --- Core Logic ---
-
-        function formatBytes(bytes, decimals = 2) {
-            if (!+bytes) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        function saveHistory() {
+            if (isHistoryLocked) return;
+            if (history.length >= MAX_HISTORY) history.shift();
+            history.push(JSON.stringify(canvas));
+            historyRedo.length = 0;
+            updateHistoryButtons();
         }
 
-        // Initialize with file
-        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-        
-        function handleFile(file) {
-            if (!file || !file.type.startsWith('image/')) {
-                console.error("File không phải là ảnh hoặc không hợp lệ.");
+        function updateHistoryButtons() {
+            els.undoBtn.disabled = history.length === 0;
+            els.redoBtn.disabled = historyRedo.length === 0;
+        }
+
+        canvas.on('object:added', () => saveHistory());
+        canvas.on('object:modified', () => saveHistory());
+        canvas.on('object:removed', () => saveHistory());
+
+        function undo() {
+            if (history.length === 0) return;
+            isHistoryLocked = true;
+            historyRedo.push(JSON.stringify(canvas));
+            const prevState = history.pop();
+            canvas.loadFromJSON(prevState, () => {
+                canvas.renderAll();
+                isHistoryLocked = false;
+                updateHistoryButtons();
+                updateFileSizeInfo();
+            });
+        }
+
+        function redo() {
+            if (historyRedo.length === 0) return;
+            isHistoryLocked = true;
+            history.push(JSON.stringify(canvas));
+            const nextState = historyRedo.pop();
+            canvas.loadFromJSON(nextState, () => {
+                canvas.renderAll();
+                isHistoryLocked = false;
+                updateHistoryButtons();
+                updateFileSizeInfo();
+            });
+        }
+
+        els.undoBtn.addEventListener('click', undo);
+        els.redoBtn.addEventListener('click', redo);
+
+        // --- 3. CANVAS ACTIONS & RESIZE ---
+
+        function resizeCanvas(w, h) {
+            saveHistory(); 
+            const newW = parseInt(w);
+            const newH = parseInt(h);
+            
+            canvas.setWidth(newW);
+            canvas.setHeight(newH);
+            
+            // Fix trắng màn hình: Reset viewport để chắc chắn không bị zoom/pan sai vị trí
+            canvas.setViewportTransform([1, 0, 0, 1, 0, 0]); 
+            canvas.calcOffset(); // Recalculate offsets from DOM
+            
+            els.width.value = newW;
+            els.height.value = newH;
+            
+            canvas.requestRenderAll();
+            updateFileSizeInfo();
+        }
+
+        document.getElementById('resizeBtn').addEventListener('click', () => {
+            resizeCanvas(els.width.value, els.height.value);
+            showToast('Đã cập nhật kích thước Canvas', 'info');
+        });
+
+        // Fit Canvas to Content
+        els.fitCanvasBtn.addEventListener('click', () => {
+            const objects = canvas.getObjects();
+            if (objects.length === 0) {
+                showToast('Không có đối tượng nào để fit', 'info');
                 return;
             }
 
-            state.originalFile = file;
-            
-            // Reset state for new file
-            state.currentRotation = 0;
-            state.markerCount = 1;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            objects.forEach(obj => {
+                const br = obj.getBoundingRect();
+                if (br.left < minX) minX = br.left;
+                if (br.top < minY) minY = br.top;
+                if (br.left + br.width > maxX) maxX = br.left + br.width;
+                if (br.top + br.height > maxY) maxY = br.top + br.height;
+            });
 
-            // UI Reset
-            settingsPanel.classList.remove('hidden');
-            toolbar.classList.remove('hidden');
-            editorArea.classList.remove('hidden');
-            actionButtons.classList.remove('hidden');
-            placeholderText.classList.add('hidden');
-            loadingIndicator.classList.remove('hidden');
+            const padding = 20;
+            const newWidth = (maxX - minX) + padding * 2;
+            const newHeight = (maxY - minY) + padding * 2;
 
-            inputs.origSize.textContent = formatBytes(file.size);
-            inputs.width.value = ""; // Reset width override
+            saveHistory();
 
+            objects.forEach(obj => {
+                obj.set({
+                    left: obj.left - minX + padding,
+                    top: obj.top - minY + padding
+                });
+                obj.setCoords();
+            });
+
+            resizeCanvas(newWidth, newHeight);
+            canvas.renderAll();
+            showToast('Đã fit Canvas vừa nội dung', 'success');
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if(confirm('Bạn có chắc muốn xóa toàn bộ không?')) {
+                saveHistory();
+                canvas.clear();
+                canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
+                resizeCanvas(initWidth, initHeight);
+                stampCount = 1;
+                els.stampCount.value = 1;
+                showToast('Đã reset Canvas', 'info');
+            }
+        });
+
+        els.deleteObjBtn.addEventListener('click', () => {
+            const active = canvas.getActiveObjects();
+            if (active.length) {
+                canvas.remove(...active);
+                canvas.discardActiveObject();
+                showToast('Đã xóa đối tượng', 'info');
+            } else {
+                showToast('Chưa chọn đối tượng nào', 'info');
+            }
+        });
+
+        // --- 4. IMAGE INPUT LOGIC ---
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) handleImageFile(file);
+            e.target.value = '';
+        });
+
+        window.addEventListener('paste', function(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            let blob = null;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    blob = items[i].getAsFile();
+                    break;
+                }
+            }
+            if (blob) {
+                handleImageFile(blob);
+                e.preventDefault();
+            }
+        });
+
+        function handleImageFile(file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    state.originalImageObj = img;
-                    inputs.origWidth.textContent = img.width;
-                    if (!inputs.width.value) inputs.width.value = Math.min(img.width, 1000); 
-                    
-                    renderCanvas(); // Initial render
-                };
-                img.src = e.target.result;
+            reader.onload = function(f) {
+                const data = f.target.result;
+                fabric.Image.fromURL(data, function(img) {
+                    const isEmpty = canvas.getObjects().length === 0;
+
+                    if (isEmpty) {
+                        const w = img.width;
+                        const h = img.height;
+                        resizeCanvas(w, h);
+                        img.set({ left: 0, top: 0, originX: 'left', originY: 'top', selectable: true });
+                        canvas.add(img);
+                        canvas.setActiveObject(img);
+                        canvas.renderAll();
+                        showToast('Đã dán ảnh.', 'success');
+                    } else {
+                        const maxWidth = canvas.getWidth() * 0.8;
+                        const maxHeight = canvas.getHeight() * 0.8;
+                        if (img.width > maxWidth || img.height > maxHeight) {
+                            img.scaleToWidth(maxWidth);
+                        }
+                        img.set({ left: canvas.getWidth()/2, top: canvas.getHeight()/2, originX: 'center', originY: 'center' });
+                        canvas.add(img);
+                        canvas.setActiveObject(img);
+                        canvas.requestRenderAll();
+                        showToast('Đã thêm ảnh vào lớp mới', 'success');
+                    }
+                    updateFileSizeInfo();
+                });
             };
             reader.readAsDataURL(file);
         }
 
-        // Render Image to Canvas (Resizing & Rotation happens here)
-        function renderCanvas() {
-            if (!state.originalImageObj) return;
-            loadingIndicator.classList.remove('hidden');
-            state.markerCount = 1; // Reset markers on reload/resize
-            
-            // 1. Calculate Scaled Dimensions (based on unrotated image)
-            const origW = state.originalImageObj.width;
-            const origH = state.originalImageObj.height;
-            const maxW = parseInt(inputs.width.value) || origW;
-            
-            let targetW = origW;
-            let targetH = origH;
+        // --- 5. TOOLBAR & SHORTCUTS ---
 
-            if (targetW > maxW) {
-                targetH = Math.round((origH * maxW) / origW);
-                targetW = maxW;
-            }
-
-            // 2. Determine Final Canvas Size based on Rotation
-            let finalW = targetW;
-            let finalH = targetH;
-            
-            if (state.currentRotation === 90 || state.currentRotation === 270) {
-                finalW = targetH;
-                finalH = targetW;
-            }
-
-            canvas.width = finalW;
-            canvas.height = finalH;
-
-            // 3. Draw Background (White for JPEG transparency fix)
-            if (inputs.format.value === 'image/jpeg') {
-                ctx.fillStyle = "#FFFFFF";
-                ctx.fillRect(0, 0, finalW, finalH);
-            } else {
-                ctx.clearRect(0, 0, finalW, finalH);
-            }
-
-            // 4. Apply Rotation Transformation
-            ctx.save();
-            ctx.translate(finalW / 2, finalH / 2);
-            ctx.rotate(state.currentRotation * Math.PI / 180);
-
-            // 5. Draw Image (using unrotated scaled dimensions, centered)
-            ctx.drawImage(state.originalImageObj, -targetW / 2, -targetH / 2, targetW, targetH);
-            
-            ctx.restore();
-            
-            updateBase64();
-            loadingIndicator.classList.add('hidden');
-        }
-
-        function rotateImage() {
-            if (!state.originalImageObj) return;
-            
-            // Xoay 90 độ
-            state.currentRotation = (state.currentRotation + 90) % 360;
-            
-            // Reset nét vẽ vì tọa độ đã thay đổi
-            state.markerCount = 1; 
-            renderCanvas();
-            showSuccess('Đã xoay ảnh 90°. (Nét vẽ cũ đã được xoá.)', 'text-yellow-400');
-        }
-
-
-        // Generate Base64 from current Canvas state
-        function updateBase64() {
-            const quality = parseFloat(inputs.quality.value);
-            state.base64 = canvas.toDataURL(inputs.format.value, quality);
-            
-            // Stats
-            const b64Len = state.base64.length;
-            inputs.compSize.textContent = formatBytes(b64Len);
-            
-            const origBytes = state.originalFile.size;
-            const diff = b64Len - origBytes;
-            const pct = (diff / origBytes) * 100;
-            
-            if (diff > 0) {
-                inputs.savings.textContent = `+${pct.toFixed(1)}%`;
-                inputs.savings.className = "font-bold text-red-500";
-            } else {
-                inputs.savings.textContent = `${pct.toFixed(1)}%`;
-                inputs.savings.className = "font-bold text-green-600";
-            }
-        }
-        
-        // Helper function to draw an arrow head
-        function drawArrow(context, fromX, fromY, toX, toY, headLength) {
-            headLength = headLength || 15; // Increased head length for clarity
-            const angle = Math.atan2(toY - fromY, toX - fromX);
-            
-            context.beginPath();
-            context.moveTo(fromX, fromY);
-            context.lineTo(toX, toY);
-            
-            // Draw arrowhead (two lines forming a V-shape)
-            context.moveTo(toX, toY);
-            // Line 1 of the head
-            context.lineTo(
-                toX - headLength * Math.cos(angle - Math.PI / 6),
-                toY - headLength * Math.sin(angle - Math.PI / 6)
-            );
-            context.moveTo(toX, toY);
-            // Line 2 of the head
-            context.lineTo(
-                toX - headLength * Math.cos(angle + Math.PI / 6),
-                toY - headLength * Math.sin(angle + Math.PI / 6)
-            );
-            context.stroke();
-        }
-
-
-        // --- Drawing Logic ---
-
-        function setTool(toolName) {
-            state.tool = toolName;
-            
-            // Update UI
-            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-            const btnId = 'btn-' + toolName;
-            const btn = document.getElementById(btnId);
-            if(btn) btn.classList.add('active');
-
-            // Cursor
-            canvas.style.cursor = toolName === 'none' ? 'default' : 'crosshair';
-        }
-
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            
-            let clientX = e.clientX;
-            let clientY = e.clientY;
-
-            // Touch support
-            if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            }
-
-            return {
-                x: (clientX - rect.left) * scaleX,
-                y: (clientY - rect.top) * scaleY
-            };
-        }
-
-        function startDrawing(e) {
-            if (state.tool === 'none') return;
-            e.preventDefault();
-            
-            const pos = getPos(e);
-            state.startX = pos.x;
-            state.startY = pos.y;
-
-            // Handle Number Marker Click separately (no drag needed)
-            if (state.tool === 'number') {
-                drawMarker(pos.x, pos.y, state.markerCount++);
-                updateBase64();
-                return;
-            }
-
-            state.isDrawing = true;
-
-            // Save snapshot for shapes (rect/circle/line/arrow) to enable preview
-            if (['rect', 'circle', 'line', 'arrow'].includes(state.tool)) {
-                state.snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            } else {
-                // For pen/redact, start path
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-            }
-            
-            // For Pen/Redact single dot
-            if(state.tool === 'pen' || state.tool === 'redact') {
-                draw(e); 
-            }
-        }
-
-        function draw(e) {
-            if (!state.isDrawing) return;
-            e.preventDefault(); 
-            
-            const pos = getPos(e);
-            
-            if (state.tool === 'pen') {
-                ctx.lineWidth = 3;
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                ctx.strokeStyle = "rgba(239, 68, 68, 0.9)"; // Red
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-            } 
-            else if (state.tool === 'redact') {
-                ctx.lineWidth = 15;
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                ctx.strokeStyle = "#000000"; // Black
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-            }
-            else if (['rect', 'circle', 'line', 'arrow'].includes(state.tool)) {
-                // Restore original state to clear previous preview frame
-                ctx.putImageData(state.snapshot, 0, 0);
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.getAttribute('data-tool');
                 
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = "rgba(239, 68, 68, 0.9)"; // Red
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
+                // Toggle Settings Panels
+                els.stampSettings.style.display = (currentMode === 'stamp') ? 'block' : 'none';
+                els.qrSettings.style.display = (currentMode === 'qrcode') ? 'block' : 'none';
 
-                let currentX = pos.x;
-                let currentY = pos.y;
-
-                if (state.tool === 'rect') {
-                    let w = currentX - state.startX;
-                    let h = currentY - state.startY;
-                    ctx.strokeRect(state.startX, state.startY, w, h);
-                } else if (state.tool === 'circle') {
-                    // Draw ellipse/circle based on drag
-                    ctx.beginPath();
-                    let radiusX = Math.abs(currentX - state.startX) / 2;
-                    let radiusY = Math.abs(currentY - state.startY) / 2;
-                    let centerX = state.startX + (currentX - state.startX) / 2;
-                    let centerY = state.startY + (currentY - state.startY) / 2;
-                    ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-                    ctx.stroke();
-                } else if (state.tool === 'line') {
-                    ctx.beginPath();
-                    ctx.moveTo(state.startX, state.startY);
-                    ctx.lineTo(currentX, currentY);
-                    ctx.stroke();
-                } else if (state.tool === 'arrow') {
-                    drawArrow(ctx, state.startX, state.startY, currentX, currentY, 15);
+                if (currentMode === 'select') {
+                    canvas.selection = true;
+                    canvas.defaultCursor = 'default';
+                    canvas.forEachObject(o => o.selectable = true);
+                } else if (currentMode === 'qrcode') {
+                    // QR mode is strictly an insertion mode, switch back to select logic for interactions
+                    canvas.selection = true;
+                    canvas.defaultCursor = 'default';
+                    // We don't disable selection here so users can move existing objects while panel is open
+                } else {
+                    canvas.selection = false;
+                    canvas.defaultCursor = 'crosshair';
+                    canvas.discardActiveObject();
+                    canvas.requestRenderAll();
+                    canvas.forEachObject(o => o.selectable = false);
                 }
-            }
-        }
-
-        function stopDrawing() {
-            if (state.isDrawing) {
-                state.isDrawing = false;
-                updateBase64(); // Update result after action
-            }
-        }
-
-        function drawMarker(x, y, number) {
-            const size = 24; // Circle diameter
-            
-            ctx.beginPath();
-            ctx.arc(x, y, size/2, 0, 2 * Math.PI, false);
-            ctx.fillStyle = '#2563eb'; // Blue-600
-            ctx.fill();
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#ffffff';
-            ctx.stroke();
-
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(number, x, y + 1); // +1 for visual center adjustment
-        }
-
-        // Event Listeners for Canvas
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-
-        // Touch Events
-        canvas.addEventListener('touchstart', startDrawing, {passive: false});
-        canvas.addEventListener('touchmove', draw, {passive: false});
-        canvas.addEventListener('touchend', stopDrawing);
-
-        function resetDrawing() {
-            if (confirm("Thao tác này sẽ xóa mọi nét vẽ. Bạn có chắc không?")) {
-                renderCanvas();
-            }
-        }
-
-        // --- Settings Events ---
-        inputs.width.addEventListener('change', () => renderCanvas()); 
-        inputs.format.addEventListener('change', () => renderCanvas()); 
-        
-        inputs.quality.addEventListener('input', () => {
-            inputs.qualityDisplay.textContent = Math.round(inputs.quality.value * 100) + '%';
-            updateBase64(); 
+            });
         });
 
-        // --- Clipboard & Copy Utils ---
-        function showSuccess(message = 'Đã sao chép vào bộ nhớ tạm!', colorClass = 'text-green-400') {
-            copySuccess.textContent = message;
-            // Find the SVG element inside the copySuccess div
-            const svgEl = copySuccess.querySelector('svg');
-            if (svgEl) {
-                svgEl.className = `w-5 h-5 mr-2 ${colorClass}`;
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return; 
+
+            if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+            if (e.ctrlKey && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+
+            switch(e.key.toLowerCase()) {
+                case 'v': clickTool('select'); break;
+                case 'r': clickTool('rect'); break;
+                case 'c': clickTool('circle'); break;
+                case 'a': clickTool('arrow'); break;
+                case 't': clickTool('text'); break;
+                case 's': clickTool('stamp'); break;
+                case 'delete': els.deleteObjBtn.click(); break;
             }
-            copySuccess.classList.remove('hidden');
-            copySuccess.classList.add('animate-bounce');
-            setTimeout(() => {
-                copySuccess.classList.add('hidden');
-                copySuccess.classList.remove('animate-bounce');
-            }, 2500);
+        });
+
+        function clickTool(name) {
+            document.querySelector(`.tool-btn[data-tool="${name}"]`).click();
         }
 
-        function copyBase64() {
-            if (!state.base64) return;
-            navigator.clipboard.writeText(state.base64).then(() => showSuccess('Đã copy mã Base64!'));
-        }
+        // --- 6. DRAWING LOGIC ---
 
-        function copyImgTag() {
-            if (!state.base64) return;
-            const tag = `<img src="${state.base64}" alt="Base64 Image" />`;
-            navigator.clipboard.writeText(tag).then(() => showSuccess('Đã copy thẻ <img>!'));
-        }
+        canvas.on('mouse:down', function(o) {
+            if (currentMode === 'select' || currentMode === 'qrcode') return;
 
-        // NEW: Copy Image to Clipboard
-        function copyImageToClipboard() {
-            if (!state.originalImageObj) return;
+            isDrawing = true;
+            const pointer = canvas.getPointer(o.e);
+            origX = pointer.x;
+            origY = pointer.y;
 
-            // Check for modern clipboard API support
-            if (typeof navigator.clipboard.write !== 'function' || typeof ClipboardItem === 'undefined') {
-                showSuccess('Lỗi: Trình duyệt không hỗ trợ sao chép ảnh trực tiếp.', 'text-red-500');
+            const commonProps = {
+                left: origX, top: origY,
+                originX: 'left', originY: 'top',
+                fill: els.transparentFill.checked ? 'transparent' : els.fillColor.value,
+                stroke: els.strokeColor.value,
+                strokeWidth: parseInt(els.strokeWidth.value),
+                transparentCorners: false,
+                cornerColor: '#2563eb',
+                cornerSize: 10
+            };
+
+            if (currentMode === 'rect') {
+                activeObj = new fabric.Rect({ ...commonProps, width: 0, height: 0 });
+                canvas.add(activeObj);
+            } 
+            else if (currentMode === 'circle') {
+                activeObj = new fabric.Ellipse({ ...commonProps, rx: 0, ry: 0 });
+                canvas.add(activeObj);
+            }
+            else if (currentMode === 'arrow') {
+                activeObj = new fabric.Line([origX, origY, origX, origY], {
+                    stroke: els.strokeColor.value,
+                    strokeWidth: parseInt(els.strokeWidth.value),
+                    selectable: false
+                });
+                canvas.add(activeObj);
+            }
+            else if (currentMode === 'text') {
+                const text = new fabric.IText('Text', {
+                    left: origX, top: origY,
+                    fontFamily: 'Inter',
+                    fill: els.strokeColor.value,
+                    fontSize: 24
+                });
+                canvas.add(text);
+                canvas.setActiveObject(text);
+                text.enterEditing();
+                isDrawing = false;
+                clickTool('select');
+            }
+            else if (currentMode === 'stamp') {
+                createStamp(origX, origY);
+                isDrawing = false;
+            }
+        });
+
+        canvas.on('mouse:move', function(o) {
+            if (!isDrawing) return;
+            const pointer = canvas.getPointer(o.e);
+
+            if (currentMode === 'rect') {
+                if(origX > pointer.x) activeObj.set({ left: Math.abs(pointer.x) });
+                if(origY > pointer.y) activeObj.set({ top: Math.abs(pointer.y) });
+                activeObj.set({ width: Math.abs(origX - pointer.x) });
+                activeObj.set({ height: Math.abs(origY - pointer.y) });
+            } 
+            else if (currentMode === 'circle') {
+                const rx = Math.abs(origX - pointer.x) / 2;
+                const ry = Math.abs(origY - pointer.y) / 2;
+                if(origX > pointer.x) activeObj.set({ left: Math.abs(pointer.x) });
+                if(origY > pointer.y) activeObj.set({ top: Math.abs(pointer.y) });
+                activeObj.set({ rx: rx, ry: ry });
+            }
+            else if (currentMode === 'arrow') {
+                activeObj.set({ x2: pointer.x, y2: pointer.y });
+            }
+            canvas.renderAll();
+        });
+
+        canvas.on('mouse:up', function(o) {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (currentMode === 'arrow') {
+                const line = activeObj;
+                canvas.remove(line);
+                createArrow(line.x1, line.y1, line.x2, line.y2);
+            }
+            
+            if (activeObj) activeObj.setCoords();
+
+            if (currentMode !== 'stamp') {
+                clickTool('select');
+                if(activeObj && currentMode !== 'arrow') canvas.setActiveObject(activeObj);
+            }
+            activeObj = null;
+        });
+
+        // --- 7. BARCODE / QR GENERATION LOGIC (NEW) ---
+        
+        els.generateBcBtn.addEventListener('click', () => {
+            const text = els.bcText.value.trim();
+            const type = els.bcType.value;
+            
+            if(!text) {
+                showToast('Vui lòng nhập nội dung!', 'error');
                 return;
             }
 
-            loadingIndicator.classList.remove('hidden');
+            try {
+                // Create a temporary canvas for bwip-js to render
+                let canvasTmp = document.createElement('canvas');
+                
+                let opts = {
+                    bcid: type,       // Barcode type
+                    text: text,       // Text to encode
+                    scale: 3,         // 3x scaling factor
+                    height: 10,       // Bar height, in millimeters
+                    includetext: true,// Show human-readable text
+                    textxalign: 'center',
+                };
+
+                // Adjust options for QR Code
+                if(type === 'qrcode') {
+                    opts.height = 50; // Width/Height are same for QR
+                    opts.includetext = false;
+                }
+
+                bwipjs.toCanvas(canvasTmp, opts);
+                
+                // Convert to Fabric Image
+                const imgUrl = canvasTmp.toDataURL('image/png');
+                fabric.Image.fromURL(imgUrl, function(img) {
+                    img.set({
+                        left: canvas.getWidth() / 2,
+                        top: canvas.getHeight() / 2,
+                        originX: 'center',
+                        originY: 'center',
+                        selectable: true
+                    });
+                    
+                    // Scale down if too big
+                    if(img.width > 300) img.scaleToWidth(300);
+                    
+                    canvas.add(img);
+                    canvas.setActiveObject(img);
+                    saveHistory();
+                    showToast('Đã chèn mã thành công!', 'success');
+                    
+                    // Switch back to select tool
+                    clickTool('select');
+                });
+
+            } catch (e) {
+                console.error(e);
+                showToast('Lỗi tạo mã: ' + e.message, 'error');
+            }
+        });
+
+        // --- 8. SPECIAL OBJECT LOGIC ---
+
+        function createArrow(x1, y1, x2, y2) {
+            const headLength = 15;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const line = new fabric.Line([x1, y1, x2, y2], {
+                stroke: els.strokeColor.value,
+                strokeWidth: parseInt(els.strokeWidth.value),
+                originX: 'center', originY: 'center'
+            });
+            x2 = x2 - (headLength/2) * Math.cos(angle);
+            y2 = y2 - (headLength/2) * Math.sin(angle);
+            const arrowHead = new fabric.Triangle({
+                left: x2, top: y2,
+                originX: 'center', originY: 'center',
+                angle: (angle * 180 / Math.PI) + 90,
+                width: headLength, height: headLength + 5,
+                fill: els.strokeColor.value
+            });
+            const group = new fabric.Group([line, arrowHead], { selectable: true });
+            canvas.add(group);
+            canvas.setActiveObject(group);
+            canvas.renderAll();
+        }
+
+        function createStamp(x, y) {
+            const num = stampCount;
+            const circle = new fabric.Circle({
+                radius: 15, fill: els.strokeColor.value,
+                stroke: '#ffffff', strokeWidth: 2,
+                originX: 'center', originY: 'center'
+            });
+            const text = new fabric.Text(num.toString(), {
+                fontSize: 18, fontFamily: 'Inter',
+                fill: '#fff', fontWeight: 'bold',
+                originX: 'center', originY: 'center'
+            });
+            const group = new fabric.Group([circle, text], {
+                left: x, top: y,
+                originX: 'center', originY: 'center', selectable: true
+            });
+            canvas.add(group);
+            stampCount++;
+            els.stampCount.value = stampCount;
+        }
+
+        function resetStamp() {
+            stampCount = parseInt(els.stampCount.value) || 1;
+            showToast(`Stamp bắt đầu từ số ${stampCount}`, 'info');
+        }
+        els.stampCount.addEventListener('change', () => stampCount = parseInt(els.stampCount.value));
+
+        // --- 9. PROPERTIES & UPDATE LOGIC ---
+
+        function updateActiveObject(prop, value) {
+            const active = canvas.getActiveObject();
+            if (!active) return;
+
+            if (active.type === 'activeSelection') {
+                active.getObjects().forEach(obj => modifyObject(obj, prop, value));
+            } else {
+                modifyObject(active, prop, value);
+            }
+            canvas.requestRenderAll();
+        }
+
+        els.strokeWidth.addEventListener('change', saveHistory);
+        els.strokeColor.addEventListener('change', saveHistory);
+        els.fillColor.addEventListener('change', saveHistory);
+
+        function modifyObject(obj, prop, value) {
+            if (obj.type === 'group') {
+                obj.getObjects().forEach(child => {
+                    if (child.type === 'text' || child.type === 'i-text') {
+                         if (prop === 'fill') return; 
+                    } else {
+                         if (prop === 'stroke') {
+                             if(child.type === 'triangle') child.set('fill', value); 
+                             else if(child.type === 'circle') child.set('fill', value); 
+                             else child.set('stroke', value);
+                         }
+                         if (prop === 'fill' && child.type === 'circle') {
+                             child.set('fill', value);
+                         }
+                    }
+                });
+                return;
+            }
+
+            if (prop === 'fill') {
+                if (obj.type === 'i-text') obj.set('fill', value);
+                else obj.set('fill', value);
+            }
+            else if (prop === 'stroke') {
+                if (obj.type === 'i-text') obj.set('fill', value);
+                else obj.set('stroke', value);
+            }
+            else if (prop === 'strokeWidth') {
+                if (obj.type !== 'i-text') obj.set('strokeWidth', parseInt(value));
+            }
+        }
+
+        els.strokeColor.addEventListener('input', (e) => updateActiveObject('stroke', e.target.value));
+        
+        els.strokeWidth.addEventListener('input', (e) => {
+            els.strokeWidthVal.innerText = e.target.value;
+            updateActiveObject('strokeWidth', e.target.value);
+        });
+
+        els.fillColor.addEventListener('input', (e) => {
+            if (!els.transparentFill.checked) updateActiveObject('fill', e.target.value);
+        });
+
+        els.transparentFill.addEventListener('change', (e) => {
+            els.fillColor.disabled = e.target.checked;
+            const val = e.target.checked ? 'transparent' : els.fillColor.value;
+            updateActiveObject('fill', val);
+            saveHistory();
+        });
+
+        // --- TEXT EDITOR LOGIC (NEW) ---
+        els.textEditorInput.addEventListener('input', function() {
+            const active = canvas.getActiveObject();
+            if (active && (active.type === 'i-text' || active.type === 'text')) {
+                active.set('text', this.value);
+                canvas.requestRenderAll();
+            }
+        });
+        
+        els.textEditorInput.addEventListener('change', function() {
+            saveHistory();
+        });
+
+        canvas.on('text:changed', function(e) {
+            if (e.target) {
+                els.textEditorInput.value = e.target.text;
+            }
+        });
+
+        // --- OBJECT SIZE INPUT LOGIC ---
+
+        function updateContextSettings() {
+            const active = canvas.getActiveObject();
             
-            // Get Blob from Canvas
-            canvas.toBlob(function(blob) {
-                loadingIndicator.classList.add('hidden');
+            // Text Editor Handling
+            if (active && (active.type === 'i-text' || active.type === 'text')) {
+                els.textEditorPanel.classList.remove('hidden');
+                els.textEditorInput.value = active.text;
+            } else {
+                els.textEditorPanel.classList.add('hidden');
+            }
+
+            // Object Size Handling
+            if (active) {
+                els.objSizePanel.classList.remove('hidden');
+                els.objWidth.value = Math.round(active.getScaledWidth());
+                els.objHeight.value = Math.round(active.getScaledHeight());
+            } else {
+                els.objSizePanel.classList.add('hidden');
+            }
+        }
+        
+        els.objWidth.addEventListener('change', function() {
+            const active = canvas.getActiveObject();
+            if(!active) return;
+            const newW = parseInt(this.value);
+            const scaleX = newW / active.width;
+            
+            if (els.lockRatio.checked) {
+                 const ratio = active.scaleY / active.scaleX;
+                 active.set('scaleX', scaleX);
+                 active.set('scaleY', scaleX * ratio);
+                 els.objHeight.value = Math.round(active.getScaledHeight());
+            } else {
+                 active.set('scaleX', scaleX);
+            }
+            active.setCoords();
+            canvas.requestRenderAll();
+            saveHistory();
+            updateFileSizeInfo();
+        });
+
+        els.objHeight.addEventListener('change', function() {
+            const active = canvas.getActiveObject();
+            if(!active) return;
+            const newH = parseInt(this.value);
+            const scaleY = newH / active.height;
+            
+            if (els.lockRatio.checked) {
+                 const ratio = active.scaleX / active.scaleY;
+                 active.set('scaleY', scaleY);
+                 active.set('scaleX', scaleY * ratio);
+                 els.objWidth.value = Math.round(active.getScaledWidth());
+            } else {
+                 active.set('scaleY', scaleY);
+            }
+            active.setCoords();
+            canvas.requestRenderAll();
+            saveHistory();
+            updateFileSizeInfo();
+        });
+
+        canvas.on('selection:created', (e) => { updatePropsFromSelection(e); updateContextSettings(); });
+        canvas.on('selection:updated', (e) => { updatePropsFromSelection(e); updateContextSettings(); });
+        canvas.on('selection:cleared', () => { 
+            els.objSizePanel.classList.add('hidden'); 
+            els.textEditorPanel.classList.add('hidden');
+        });
+        canvas.on('object:modified', updateContextSettings);
+
+        function updatePropsFromSelection(e) {
+            const obj = e.selected[0];
+            if (!obj) return;
+            if (obj.stroke && obj.stroke !== 'transparent') els.strokeColor.value = obj.stroke;
+            if (obj.strokeWidth) {
+                els.strokeWidth.value = obj.strokeWidth;
+                els.strokeWidthVal.innerText = obj.strokeWidth;
+            }
+            if (obj.fill === 'transparent') {
+                els.transparentFill.checked = true;
+                els.fillColor.disabled = true;
+            } else if (typeof obj.fill === 'string' && obj.fill.startsWith('#')) {
+                els.transparentFill.checked = false;
+                els.fillColor.disabled = false;
+                els.fillColor.value = obj.fill;
+            }
+        }
+
+        // --- 10. LAYERS & EXPORT ---
+
+        document.getElementById('bringFront').addEventListener('click', () => {
+            const active = canvas.getActiveObject();
+            if (active) { active.bringForward(); canvas.discardActiveObject(); canvas.renderAll(); saveHistory(); }
+        });
+        document.getElementById('sendBack').addEventListener('click', () => {
+            const active = canvas.getActiveObject();
+            if (active) { active.sendBackwards(); canvas.discardActiveObject(); canvas.renderAll(); saveHistory(); }
+        });
+        document.getElementById('rotateLeft').addEventListener('click', () => {
+            const active = canvas.getActiveObject();
+            if (active) { active.rotate((active.angle || 0) - 90); canvas.requestRenderAll(); saveHistory(); }
+        });
+        document.getElementById('rotateRight').addEventListener('click', () => {
+            const active = canvas.getActiveObject();
+            if (active) { active.rotate((active.angle || 0) + 90); canvas.requestRenderAll(); saveHistory(); }
+        });
+
+        function getExportData(callback) {
+            const quality = parseFloat(els.quality.value);
+            const prevBg = canvas.backgroundColor;
+            if (!prevBg && !canvas.backgroundImage) canvas.backgroundColor = '#ffffff';
+            
+            // Render all to verify
+            canvas.renderAll();
+            
+            // Use toBlob for direct blob creation (better for clipboard)
+            // Changed to 'image/png' for lossless output
+            canvas.getElement().toBlob(function(blob) {
+                // restore bg
+                canvas.backgroundColor = prevBg;
+                callback(blob);
+            }, 'image/png'); // Quality argument is ignored for PNG
+        }
+
+        function updateFileSizeInfo() {
+            // PNG size estimation is difficult without creating the blob
+            const w = canvas.getWidth();
+            const h = canvas.getHeight();
+            
+            // Just show dimensions for PNG as compression varies heavily
+            els.fileInfo.innerHTML = `Size: ${w}x${h}px | PNG`;
+        }
+
+        els.quality.addEventListener('input', updateFileSizeInfo);
+        canvas.on('object:modified', updateFileSizeInfo);
+        canvas.on('object:added', updateFileSizeInfo);
+
+        // --- NEW COPY FUNCTION ---
+        document.getElementById('copyClipboard').addEventListener('click', () => {
+            getExportData(async function(blob) {
                 if (!blob) {
-                    showSuccess('Lỗi: Không thể tạo ảnh Blob.', 'text-red-500');
+                    showToast('Lỗi tạo ảnh', 'error');
                     return;
                 }
                 
-                // Write Blob as ClipboardItem
-                const item = new ClipboardItem({ [blob.type]: blob });
-                navigator.clipboard.write([item]).then(function() {
-                    showSuccess('Đã sao chép ảnh vào clipboard!');
-                }, function(err) {
-                    console.error('Error copying image: ', err);
-                    showSuccess('Lỗi: Thất bại khi sao chép ảnh.', 'text-red-500');
-                });
-            }, inputs.format.value, parseFloat(inputs.quality.value));
-        }
-
-        // NEW: Paste Image from Clipboard
-        document.addEventListener('paste', handlePaste);
-
-        function handlePaste(e) {
-            const items = e.clipboardData.items;
-            let imageFound = false;
-
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    const blob = items[i].getAsFile();
-                    if (blob) {
-                        e.preventDefault(); // Stop default paste action
-                        handleFile(blob);
-                        imageFound = true;
-                        break;
-                    }
+                try {
+                    // Method 1: Modern Clipboard API
+                    const item = new ClipboardItem({ [blob.type]: blob });
+                    await navigator.clipboard.write([item]);
+                    showToast('Đã copy ảnh vào Clipboard!', 'success');
+                } catch (err) {
+                    console.warn('Clipboard API failed, showing manual modal...', err);
+                    
+                    // Method 2: Manual Fallback
+                    const url = URL.createObjectURL(blob);
+                    els.modalImg.src = url;
+                    els.modal.classList.add('active');
                 }
-            }
+            });
+        });
+
+        document.getElementById('copyMarkdown').addEventListener('click', () => {
+            // Use PNG format
+            const dataURL = canvas.toDataURL({ format: 'png' });
             
-            if (imageFound) {
-                 showSuccess('Đã dán ảnh từ clipboard!');
-            }
+            const md = `![SOP Image](${dataURL})`;
+            const textArea = document.createElement("textarea");
+            textArea.value = md;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Đã copy mã Markdown (PNG)!', 'success');
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            getExportData(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                // Change extension to .png
+                link.download = `sop-image-${Date.now()}.png`;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showToast('Đang tải xuống...', 'success');
+            });
+        });
+
+        function showToast(msg, type='info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            let icon = '<i class="fa-solid fa-info-circle"></i>';
+            if (type === 'success') icon = '<i class="fa-solid fa-check-circle"></i>';
+            if (type === 'error') icon = '<i class="fa-solid fa-exclamation-circle"></i>';
+            
+            toast.innerHTML = `${icon} <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        // --- Drag & Drop ---
-        const dropZone = document.querySelector('label[for="dropzone-file"]');
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
-        dropZone.addEventListener('drop', (e) => {
-            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                handleFile(e.dataTransfer.files[0]);
-            }
-        });
+        // Init
+        saveHistory();
+        updateFileSizeInfo();
+        showToast('Sẵn sàng! Dán ảnh (Ctrl+V) để bắt đầu.', 'info');
 
     </script>
 </body>
