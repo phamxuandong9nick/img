@@ -360,7 +360,6 @@
                 <div class="control-row">
                     <label style="font-size: 0.75rem;">Định dạng xuất: PNG (Lossless)</label>
                 </div>
-                <!-- Hidden quality slider because PNG is lossless usually, keeping for logic but hiding UI or disabling -->
                 <input type="range" id="qualityRange" min="0.1" max="1.0" step="0.1" value="1.0" disabled style="opacity: 0.5;">
                 <div class="file-info" id="fileSizeInfo">Size: - | PNG</div>
             </div>
@@ -1246,6 +1245,7 @@
             if (active) { active.rotate((active.angle || 0) + 90); canvas.requestRenderAll(); saveHistory(); }
         });
 
+        // --- FIXED EXPORT LOGIC FOR CORRECT SIZING ---
         function getExportData(callback) {
             const quality = parseFloat(els.quality.value);
             const prevBg = canvas.backgroundColor;
@@ -1254,13 +1254,22 @@
             // Render all to verify
             canvas.renderAll();
             
-            // Use toBlob for direct blob creation (better for clipboard)
-            // Changed to 'image/png' for lossless output
-            canvas.getElement().toBlob(function(blob) {
-                // restore bg
-                canvas.backgroundColor = prevBg;
-                callback(blob);
-            }, 'image/png'); // Quality argument is ignored for PNG
+            // FIX: Use toDataURL with multiplier: 1 first to get correct logical size,
+            // then convert to Blob. This avoids Retina scaling issues with toBlob() on canvas element.
+            const dataURL = canvas.toDataURL({
+                format: 'png',
+                multiplier: 1, 
+                quality: 1 // PNG is lossless
+            });
+
+            // Convert Base64 to Blob
+            fetch(dataURL)
+                .then(res => res.blob())
+                .then(blob => {
+                    // restore bg if needed (though we just read it)
+                    canvas.backgroundColor = prevBg;
+                    callback(blob);
+                });
         }
 
         function updateFileSizeInfo() {
@@ -1302,7 +1311,7 @@
 
         document.getElementById('copyMarkdown').addEventListener('click', () => {
             // Use PNG format
-            const dataURL = canvas.toDataURL({ format: 'png' });
+            const dataURL = canvas.toDataURL({ format: 'png', multiplier: 1 });
             
             const md = `![SOP Image](${dataURL})`;
             const textArea = document.createElement("textarea");
